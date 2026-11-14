@@ -2,7 +2,7 @@
 
 Everything here is already built into this project unless it says **You do this**. Code blocks are copied from the generated files, so they match what you deploy.
 
-**Hosting choice:** Cloudflare Pages. It serves the static site from Cloudflare's network, reads the `_headers` and `_redirects` files in this project, and runs the secure inquiry form handler in `functions/api/inquiry.js`. All of the Cloudflare settings below assume this.
+**Hosting choice:** a Cloudflare Worker with static assets, deployed from GitHub. Cloudflare serves the site in `public/` from its network, applies `public/_headers` and `public/_redirects`, and runs the secure inquiry form handler (`src/worker.js` and `src/inquiry.js`). The settings are in `wrangler.jsonc`. All of the Cloudflare settings below assume this.
 
 **Content rule:** every company fact on enerfab.lk comes from efpl.org, or from the Tech Monitor 2007 review that efpl.org links to (always credited). Nothing is invented: no savings figures, coordinates or client claims that EnerFab hasn't published. Section 1 explains how to add more detail using EnerFab's own project data.
 
@@ -26,6 +26,13 @@ https://enerfab.lk/
 │   └── /solutions/esco-energy-solutions/    "ESCO energy solutions Sri Lanka"
 ├── /projects/                               9 real projects (case studies)
 ├── /faq/                                    15 technical Q&As (FAQPage schema)
+├── /insights/                               energy knowledge hub (6 in-depth guides, Article schema)
+│   ├── /insights/how-biomass-gasification-works/
+│   ├── /insights/furnace-oil-to-biomass-boiler-conversion/
+│   ├── /insights/gliricidia-fuelwood-sri-lanka/
+│   ├── /insights/biomass-chp-gasifier-generator/
+│   ├── /insights/industrial-energy-audit-sri-lanka/
+│   └── /insights/mini-hydro-turbine-selection/
 ├── /videos/
 ├── /recognition/
 └── /contact/                                secure inquiry form
@@ -41,6 +48,7 @@ Each division page links up to `/solutions/`, across to three related divisions,
 | Copy | original Mobirise text | fully rewritten wording, plus sections efpl.org doesn't have |
 | Case studies | scattered sentences | `/projects/`: 9 structured projects |
 | Technical FAQ | none | `/faq/`: 15 answers, FAQPage schema |
+| Knowledge content | none | `/insights/`: 6 sourced engineering guides that link to the division pages |
 | Comparison data | none | gasifier conversion vs wood-fired boiler table; Tech Monitor capacity/efficiency/cost table (credited) |
 | Interactive | none | 3D gasifier plant tour and viewer |
 | Structured data | none | Organization, LocalBusiness, Service ×6, FAQPage, Product ×2, BreadcrumbList |
@@ -49,7 +57,8 @@ Each division page links up to `/solutions/`, across to three related divisions,
 **You do this. Over the next 3 months, add EnerFab's own data, which only EnerFab has:**
 1. For each project on `/projects/`, collect the real numbers: fuel used before and after, fuel cost, payback period, operating hours, kW. Add them to `tools/build.py` (the `projects` list) and rebuild. Never estimate. Use only measured or invoiced figures, with the client's permission.
 2. Add new projects completed since 2018. These are the strongest content you can publish.
-3. Write one technical article a month (see section 7). Publish under `/insights/your-title/`; copy the pattern of the division pages in `tools/build.py`.
+3. Add one technical article a month to the knowledge hub (see section 7). Each article is an entry in `tools/articles.py`: copy an existing one, write the text, list its sources, then run `python tools/build.py`. The page, Article schema, sitemap entry and links from the home page and division pages are all generated automatically.
+5. **Topical authority.** Broad searches such as "energy" are dominated by government bodies and the electricity board; no company site ranks first for them. The hub targets the searches buyers actually make around EnerFab's work (biomass, gasification, producer gas, furnace-oil replacement, fuelwood, CHP, energy audits, mini-hydro). Each new guide that answers a real question widens the set of energy searches where enerfab.lk can appear. Good next topics: boiler efficiency basics, steam system losses, coconut shell and rice husk as fuels, LPG-to-biomass for dryers, biomass fuel storage and drying, and the costs of running a gasifier.
 4. Ask an EnerFab engineer to review each page and add a named byline. Expert authorship is an important quality signal.
 
 ### Optional canonical tags on efpl.org
@@ -75,8 +84,8 @@ Also add a visible link on efpl.org's home page: "Visit our new website: enerfab
 
 ### Domain and DNS (You do this)
 1. Add `enerfab.lk` to Cloudflare (free plan is enough to start). At your .lk registrar, change the nameservers to the two Cloudflare gives you.
-2. Create a Cloudflare Pages project from this GitHub repository. Build command: `python tools/build.py`. If your Pages build image lacks Pillow, leave the build command empty instead: the generated files are committed. Output directory: `/`.
-3. Pages → Custom domains → add `enerfab.lk` and `www.enerfab.lk`. Cloudflare creates the proxied CNAME records.
+2. In Cloudflare, go to Workers & Pages and connect this GitHub repository to your Worker. The deploy command is `npx wrangler deploy` and the build command can be empty, because the generated pages are committed. The `name` in `wrangler.jsonc` must match the Worker's name in the dashboard.
+3. Worker → Settings → Domains & Routes → add the custom domains `enerfab.lk` and `www.enerfab.lk`.
 4. Rules → Redirect Rules → new rule: *When* hostname equals `www.enerfab.lk` → *Then* dynamic redirect, expression `concat("https://enerfab.lk", http.request.uri.path)`, status 301, preserve query string.
 
 ### SSL/TLS (You do this)
@@ -101,7 +110,7 @@ Also add a visible link on efpl.org's home page: "Visit our new website: enerfab
 ### Security headers (built: `_headers`)
 
 ```
-# Cloudflare Pages response headers. Generated by tools/build.py; edit there.
+# Cloudflare response headers for static assets. Generated by tools/build.py; edit there.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-l0L9jdI9fLIosAZRIlqyAAUyAB3+rVzexFWNylXmTro=' 'sha256-viECVWUirw2hTN0FSySe+tXFU0yE0Dv1CMbpIXVrc68=' https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://i.ytimg.com; frame-src https://www.youtube-nocookie.com https://www.google.com https://maps.google.com https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
@@ -136,7 +145,7 @@ Test after launch: securityheaders.com and the Mozilla Observatory (developer.mo
 
 ## 3. Inquiry form security (built)
 
-Flow: browser → Cloudflare WAF and rate limit → `POST /api/inquiry` (`functions/api/inquiry.js`) → Turnstile check → email to info@enerfab.lk.
+Flow: browser → Cloudflare WAF and rate limit → `POST /api/inquiry` (`src/worker.js` → `src/inquiry.js`) → Turnstile check → email to info@enerfab.lk.
 
 | Protection | How |
 |---|---|
@@ -150,7 +159,7 @@ Flow: browser → Cloudflare WAF and rate limit → `POST /api/inquiry` (`functi
 **You do this before launch:**
 1. Cloudflare → Turnstile → Add site → domain `enerfab.lk`, mode *Managed*. Copy the **site key** into `TURNSTILE_SITE_KEY` at the top of `tools/build.py` and rebuild. The default in the file is Cloudflare's public test key, which always passes and gives no protection.
 2. Create a free account at resend.com, add the domain `enerfab.lk`, and add the SPF and DKIM DNS records it shows you in Cloudflare DNS.
-3. Pages → Settings → Variables and secrets (Production):
+3. Worker → Settings → Variables and secrets. `MAIL_FROM` and `MAIL_TO` are already set in `wrangler.jsonc`, so only add the two secrets:
    - `TURNSTILE_SECRET_KEY` (secret): from Turnstile
    - `RESEND_API_KEY` (secret): from Resend
    - `MAIL_FROM`: `EnerFab Website <website@enerfab.lk>`
@@ -700,6 +709,6 @@ Product schema for the EWG 1 wood grab and DM500 chopper is on the fuelwood page
 | 22–30 | Partners: ask GUGLER Water Turbines and ATT Lifting Equipment to list EnerFab as their Sri Lanka partner with a link to the matching enerfab.lk page. Ask the University of Moratuwa mechanical engineering department about a mention or a student project link |
 | 31–40 | Press release: "EnerFab, Sri Lanka's leading gasifier maker since 2005, launches enerfab.lk", built around one real case study with real figures. Send it to the Daily FT, the Sunday Times business section, EconomyNext, Daily Mirror Business and LankaBusinessOnline |
 | 41–50 | Customers: ask the hotels and factories that run EnerFab gasifiers to mention them on their sustainability pages with a link, and to leave Google reviews |
-| 51–60 | Publish the first two technical articles (for example "Furnace oil to biomass: how a boiler conversion works" and "Gliricidia as industrial fuelwood"), share them on LinkedIn, and review Search Console: which searches appear, which pages need work |
+| 51–60 | Have an EnerFab engineer review the six launch guides in `/insights/`, publish one new guide, share each guide on LinkedIn, and review Search Console: which searches appear, which pages need work |
 
 Monthly after that: one article, one Google Business Profile post, one new project or update, check Search Console and reply to reviews.

@@ -1,15 +1,15 @@
-"""Local preview server that behaves like Cloudflare Pages for this site.
+"""Local preview server that behaves like the Cloudflare Worker for this site.
 
     python tools/serve.py [port]
 
-Serves the project folder, applies the global headers from _headers
+Serves public/, applies the global headers from _headers
 (including the Content-Security-Policy, so violations show in the browser
 console), serves 404.html for missing pages, and returns a stub reply for
 POST /api/inquiry (the real handler only runs on Cloudflare).
 """
 import http.server, os, sys, json
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public"))
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 
 def global_headers():

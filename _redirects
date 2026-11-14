@@ -1,9 +1,0 @@
-# Old flat URLs from earlier builds -> clean silo URLs (Cloudflare Pages)
-/index.html            /                   301
-/about.html            /about/             301
-/solutions.html        /solutions/         301
-/videos.html           /videos/            301
-/testimonials.html     /recognition/       301
-/contact.html          /contact/           301
-/page1.html            /about/             301
-/page2.html            /solutions/         301

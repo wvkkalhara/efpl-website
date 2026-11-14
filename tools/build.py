@@ -5,17 +5,20 @@ Usage (from the project folder):
 
 Generates every page (clean folder URLs such as /solutions/biomass-gasifiers/),
 sitemap.xml, robots.txt, site.webmanifest, _headers (security headers with
-CSP hashes for the inline scripts) and _redirects, for Cloudflare Pages.
+CSP hashes for the inline scripts) and _redirects, all inside public/.
 
 All company facts come from efpl.org and the Tech Monitor (2007) review it
 links to. Needs Python 3 and Pillow (pip install pillow) to read image sizes
 and to make WebP copies of new photos.
 """
 import base64, hashlib, html, json, os, re, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from articles import ARTICLES
 from datetime import date
 from PIL import Image
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# All site files live in public/ (served by the Cloudflare Worker in src/worker.js)
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public"))
 SITE = "https://enerfab.lk"
 LEGACY = "https://efpl.org/"
 PHONE, TEL = "+94 11 288 8821", "+94112888821"
@@ -88,6 +91,18 @@ DIV = [
      "card": "Energy audits and turnkey energy-saving projects with a payback guarantee."},
 ]
 DIVS = {d["slug"]: d for d in DIV}
+
+def reading_time(a):
+    words = len(re.sub(r"<[^>]+>", " ", a["body"]).split())
+    return max(3, round(words / 200))
+
+def nice_date(iso):
+    return date.fromisoformat(iso).strftime("%-d %B %Y") if os.name != "nt" else date.fromisoformat(iso).strftime("%#d %B %Y")
+
+def article_cards(arts):
+    """Grid of article cards linking into the knowledge hub."""
+    return '<div class="grid-3">' + "".join(
+        f'''<a class="acard" href="/insights/{a["slug"]}/" data-reveal><figure class="media media--wide">{pic(a["img"], "", sizes="(max-width: 760px) 100vw, 33vw")}</figure><span class="acard__meta">{reading_time(a)} min read</span><h3>{a["title"]}</h3><p>{a["desc"]}</p><span class="link">Read the guide {ARROW}</span></a>''' for a in arts) + "</div>"
 
 # ---------------------------------------------------------------- structured data
 ORG_ID = SITE + "/#org"
@@ -209,6 +224,7 @@ def header(active=""):
         <ul class="nav__menu">{menu}</ul>
       </div>
       <a href="/projects/"{cur('projects')}>Projects</a>
+      <a href="/insights/"{cur('insights')}>Insights</a>
       <a href="/faq/"{cur('faq')}>FAQ</a>
       <a href="/contact/"{cur('contact')}>Contact</a>
       <a class="nav__phone" href="tel:{TEL}">Call {PHONE}</a>
@@ -245,6 +261,7 @@ def footer(three=False):
         <ul>
           <li><a href="/about/">About EnerFab</a></li>
           <li><a href="/projects/">Projects</a></li>
+          <li><a href="/insights/">Energy insights</a></li>
           <li><a href="/faq/">Technical FAQ</a></li>
           <li><a href="/videos/">Videos</a></li>
           <li><a href="/recognition/">Recognition and press</a></li>
@@ -453,6 +470,16 @@ home = head("/", "Biomass Gasifiers Sri Lanka | Furnace Oil to Biomass | EnerFab
 <section class="sec sec--line">
   <div class="wrap">
     <div class="head">
+      <h2 data-split>Energy insights</h2>
+      <a class="link" href="/insights/" data-reveal>All guides {ARROW}</a>
+    </div>
+    {article_cards(ARTICLES[:3])}
+  </div>
+</section>
+
+<section class="sec sec--line">
+  <div class="wrap">
+    <div class="head">
       <h2 data-split>See the plants running</h2>
       <a class="link" href="/videos/" data-reveal>All videos {ARROW}</a>
     </div>
@@ -490,11 +517,24 @@ hub = head("/solutions/", "Engineering Solutions Sri Lanka | Biomass, Hydro, Ste
 page("/solutions/", "solutions/index.html", hub, "0.9")
 
 # ================================================================ DIVISION PAGES
+def further_reading(slug):
+    arts = [a for a in ARTICLES if slug in a["divs"]][:3]
+    if not arts:
+        return ""
+    return f"""
+<section class="sec sec--line">
+  <div class="wrap">
+    <div class="head"><h2 data-split>Further reading</h2><a class="link" href="/insights/" data-reveal>All energy guides {ARROW}</a></div>
+    {article_cards(arts)}
+  </div>
+</section>
+"""
+
 def division(slug, title, desc, h1, intro, body, rel, three=False, extra=""):
     d = DIVS[slug]
     content = head(f"/solutions/{slug}/", title, desc, three=three,
         extra=crumbs_ld([("Home", "/"), ("Solutions", "/solutions/"), (d["name"], f"/solutions/{slug}/")]) + service_ld(d, desc) + extra
-    ) + header(slug) + page_hero(d["img"], [("Solutions", "/solutions/"), (d["name"], None)], h1, intro) + body + f"""
+    ) + header(slug) + page_hero(d["img"], [("Solutions", "/solutions/"), (d["name"], None)], h1, intro) + body + further_reading(slug) + f"""
 <section class="sec sec--line">
   <div class="wrap">
     <div class="head"><h2 data-split>Related solutions</h2></div>
@@ -1098,6 +1138,60 @@ cp = head("/contact/", "Contact EnerFab | Biomass Gasifier Quotes Sri Lanka",
 """ + footer()
 page("/contact/", "contact/index.html", cp, "0.8")
 
+# ================================================================ INSIGHTS (knowledge hub)
+ins = head("/insights/", "Energy Insights Sri Lanka | Biomass, Gasification, CHP | EnerFab",
+    "Practical guides on biomass gasification, furnace oil to biomass conversion, Gliricidia fuelwood, biomass CHP, factory energy audits and mini-hydro turbines in Sri Lanka.",
+    extra=crumbs_ld([("Home", "/"), ("Insights", "/insights/")]) + ld({"@context": "https://schema.org", "@type": "CollectionPage", "url": SITE + "/insights/",
+        "name": "EnerFab energy insights", "publisher": {"@id": ORG_ID},
+        "hasPart": [{"@type": "Article", "headline": a["title"], "url": f"{SITE}/insights/{a['slug']}/"} for a in ARTICLES]})
+) + header("insights") + page_hero("gliricidia-leaves.jpg", [("Insights", None)], "Energy insights for Sri Lankan industry",
+    "Practical engineering guides on biomass, gasification, combined heat and power, energy efficiency and small hydro.") + f"""
+<section class="sec">
+  <div class="wrap">
+    {article_cards(ARTICLES)}
+  </div>
+</section>
+{cta("Have an energy question?", "Tell us about your plant and EnerFab’s engineers will be in touch.")}""" + footer()
+page("/insights/", "insights/index.html", ins, "0.8")
+
+for a in ARTICLES:
+    url = f"{SITE}/insights/{a['slug']}/"
+    art_ld = ld({"@context": "https://schema.org", "@type": "Article", "@id": url + "#article", "headline": a["title"], "description": a["desc"],
+        "image": f"{SITE}/assets/img/{a['img']}", "datePublished": a["date"], "dateModified": a.get("modified", a["date"]),
+        "author": {"@id": ORG_ID}, "publisher": {"@id": ORG_ID}, "mainEntityOfPage": url, "inLanguage": "en-LK",
+        "about": [{"@id": f"{SITE}/solutions/{s}/#service"} for s in a["divs"]]})
+    src = "".join(f'<li><a href="{u}"{"" if u.startswith("/") else " rel=\"noopener\" target=\"_blank\""}>{html.escape(n)}</a></li>' for n, u in a["sources"])
+    others = [o for o in ARTICLES if o["slug"] != a["slug"]][:3]
+    content = head(f"/insights/{a['slug']}/", a["seo"], a["desc"], image="og-image.jpg",
+        extra=crumbs_ld([("Home", "/"), ("Insights", "/insights/"), (a["title"], f"/insights/{a['slug']}/")]) + art_ld
+    ) + header("insights") + page_hero(a["img"], [("Insights", "/insights/"), (a["title"], None)], a["title"], a["desc"]) + f"""
+<section class="sec">
+  <div class="wrap article">
+    <aside class="article__side">
+      <p class="article__meta">EnerFab engineering<br>{nice_date(a["date"])}<br>{reading_time(a)} min read</p>
+      <div class="panel takeaways" data-reveal>
+        <h2>Key points</h2>
+        <ul class="checks">{"".join(f"<li>{t}</li>" for t in a["takeaways"])}</ul>
+      </div>
+    </aside>
+    <article class="prose">
+      {a["body"]}
+      <h2>Sources</h2>
+      <ul class="sources">{src}</ul>
+      <p class="muted note">General engineering guidance. Every plant is different: ask EnerFab’s engineers before you design or buy.</p>
+      <p>Related: {" · ".join(f'<a href="/solutions/{s}/">{DIVS[s]["name"]}</a>' for s in a["divs"])}</p>
+    </article>
+  </div>
+</section>
+<section class="sec sec--line">
+  <div class="wrap">
+    <div class="head"><h2 data-split>More energy guides</h2><a class="link" href="/insights/" data-reveal>All guides {ARROW}</a></div>
+    {article_cards(others)}
+  </div>
+</section>
+{cta()}""" + footer()
+    page(f"/insights/{a['slug']}/", f"insights/{a['slug']}/index.html", content, "0.7")
+
 # ================================================================ 404
 nf = head("/404.html", "Page not found | EnerFab", "This page could not be found. Explore EnerFab biomass gasifiers and engineering solutions.", noindex=True
 ) + header() + page_hero("plantation-hills.jpg", [("Page not found", None)], "This page could not be found",
@@ -1135,7 +1229,7 @@ CSP = "; ".join([
     "frame-ancestors 'none'",
     "upgrade-insecure-requests",
 ])
-write("_headers", f"""# Cloudflare Pages response headers. Generated by tools/build.py; edit there.
+write("_headers", f"""# Cloudflare response headers for static assets. Generated by tools/build.py; edit there.
 /*
   Content-Security-Policy: {CSP}
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
@@ -1161,7 +1255,7 @@ write("_headers", f"""# Cloudflare Pages response headers. Generated by tools/bu
 /api/*
   Cache-Control: no-store
 """)
-write("_redirects", """# Old flat URLs from earlier builds -> clean silo URLs (Cloudflare Pages)
+write("_redirects", """# Old flat URLs from earlier builds -> clean silo URLs
 /index.html            /                   301
 /about.html            /about/             301
 /solutions.html        /solutions/         301
