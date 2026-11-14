@@ -132,18 +132,30 @@ button { font: inherit; }
 .tour__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .3; }
 .is-3d .tour__fallback { opacity: 0; transition: opacity .8s; }
 .tour__steps { position: relative; z-index: 3; margin-top: -100vh; margin-top: -100svh; }
+/* Tour text: anchored to the left edge on landscape screens (the plant fills the right),
+   stacked under the plant on portrait screens. Column widths scale with the viewport. */
 .step { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; padding: calc(var(--header-h) + 24px) 0 64px; }
-.step__card { max-width: 520px; }
-.step:not(.step--intro) .step__card { background: rgba(12, 21, 16, .62); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: var(--r-lg); padding: clamp(24px, 3vw, 40px); }
+.step > .wrap { max-width: none; width: 100%; margin: 0; padding: 0 var(--gutter) 0 clamp(20px, 5vw, 110px); }
+.step__card { width: min(540px, 40vw); }
+.step:not(.step--intro) .step__card { background: rgba(12, 21, 16, .62); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: var(--r-lg); padding: clamp(22px, 2.6vw, 40px); }
 .step__card p:last-child { margin-bottom: 0; }
-.step__card h2 { font-size: clamp(2rem, 4.4vw, 3.6rem); }
-.step__card p { font-size: clamp(1.02rem, 1.3vw, 1.15rem); }
+.step__card h2 { font-size: clamp(1.8rem, 3.2vw, 3.6rem); }
+.step__card p { font-size: clamp(1rem, 1.15vw, 1.15rem); }
 .step__no { display: inline-flex; align-items: center; gap: 12px; font: 500 .9rem/1 var(--body); color: var(--ember); margin-bottom: 20px; }
 .step__no::after { content: ""; width: 48px; height: 1px; background: currentColor; opacity: .6; }
-.step--intro .step__card { max-width: 660px; }
-.step--intro h1 { font-size: clamp(2.6rem, 5.6vw, 5.4rem); }
-.step--intro h1 { margin-bottom: 28px; }
-.step--intro .lede { margin-bottom: 36px; color: #d5dfd8; }
+.step--intro .step__card { width: min(760px, 46vw); }
+.step--intro h1 { font-size: clamp(2.4rem, 4.3vw, 5.6rem); margin-bottom: 28px; }
+.step--intro .lede { font-size: clamp(1.02rem, 1.25vw, 1.3rem); margin-bottom: 36px; color: #d5dfd8; }
+@media (max-aspect-ratio: 9/10) {
+  .tour__stage::after { background: linear-gradient(0deg, rgba(12, 21, 16, .97) 0%, rgba(12, 21, 16, .75) 40%, transparent 66%), linear-gradient(180deg, rgba(12, 21, 16, .6), transparent 20%); }
+  .step { align-items: flex-end; padding-bottom: 40px; }
+  .step > .wrap { padding: 0 var(--gutter); }
+  .step__card, .step--intro .step__card { width: 100%; max-width: 680px; }
+  .step__card h2 { font-size: clamp(1.8rem, 6vw, 3rem); }
+  .step__card p, .step--intro .lede { font-size: clamp(1rem, 2.4vw, 1.2rem); }
+  .step--intro h1 { font-size: clamp(2.2rem, 8.5vw, 4.4rem); }
+  .tour__progress { display: none; }
+}
 .tour__progress { position: absolute; right: var(--gutter); top: 50%; transform: translateY(-50%); z-index: 4; display: grid; gap: 10px; }
 .tour__progress i { display: block; width: 3px; height: 26px; border-radius: 3px; background: var(--line-2); transition: background .3s, height .4s var(--ease); }
 .tour__progress i.is-on { background: var(--green); height: 44px; }
@@ -465,9 +477,6 @@ td:not(:first-child), th:not(:first-child) { white-space: nowrap; color: var(--h
   :root { --header-h: 64px; }
   body { font-size: 16px; }
   .brand img { height: 34px; }
-  .tour__stage::after { background: linear-gradient(0deg, rgba(12, 21, 16, .97) 0%, rgba(12, 21, 16, .75) 40%, transparent 66%), linear-gradient(180deg, rgba(12, 21, 16, .6), transparent 20%); }
-  .step { align-items: flex-end; padding-bottom: 40px; }
-  .step--intro h1 { font-size: clamp(2.2rem, 10.4vw, 3.4rem); }
   .step--intro .label { display: none; }
   .tour__progress { display: none; }
   .scroll-cue { margin-top: 24px; }

@@ -350,7 +350,9 @@ function mount(el) {
       pGoal.lerpVectors(K[k].p, K[k + 1].p, f);
       tGoal.lerpVectors(K[k].t, K[k + 1].t, f);
       // close-ups sit further back so the whole part stays in view
-      const zoom = (portrait ? 1.55 : 1) * (1 + 0.55 * (1 - Math.abs(2 * (p / (K.length - 1)) - 1) ** 6));
+      // narrower landscape screens pull back too, so the plant still fits beside the text
+      const aspectPull = portrait ? 1.55 : Math.max(1, 1.75 / (W / H));
+      const zoom = aspectPull * (1 + 0.55 * (1 - Math.abs(2 * (p / (K.length - 1)) - 1) ** 6));
       pGoal.sub(tGoal).multiplyScalar(zoom).add(tGoal);
       if (first || reduceMotion) { pCur.copy(pGoal); tCur.copy(tGoal); first = false; }
       const e = 1 - Math.pow(0.0015, dt);
@@ -360,7 +362,7 @@ function mount(el) {
       camera.lookAt(tCur);
       // keep the subject clear of the text: right of centre on wide screens, upper half on phones
       if (portrait) camera.setViewOffset(W, H, 0, H * 0.2, W, H);
-      else camera.setViewOffset(W, H, -W * 0.22, 0, W, H);
+      else camera.setViewOffset(W, H, -W * 0.25, 0, W, H);  // plant centred in the right half, clear of the text column
       const near = Math.round(p);
       const key = Math.abs(p - near) < 0.32 ? K[near].tag : null;
       if (key) {
