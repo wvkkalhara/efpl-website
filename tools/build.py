@@ -14,6 +14,7 @@ and to make WebP copies of new photos.
 import base64, hashlib, html, json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from articles import ARTICLES
+from projects import PROJECTS
 from datetime import date
 from PIL import Image
 
@@ -385,7 +386,7 @@ for i, (no, body) in enumerate(tour_steps):
 
 home_desc = "EnerFab builds biomass gasifiers in Sri Lanka that replace diesel, furnace oil and LPG in boilers, dryers and generators, and supplies the fuelwood. Since 2005."
 home = head("/", "Biomass Gasifiers Sri Lanka | Furnace Oil to Biomass | EnerFab", home_desc, three=True,
-    extra=ld({"@context": "https://schema.org", "@type": "WebSite", "@id": SITE + "/#website", "name": "EnerFab", "url": SITE + "/", "publisher": {"@id": ORG_ID}, "inLanguage": "en-LK"})
+    extra=ld({"@context": "https://schema.org", "@type": "WebSite", "@id": SITE + "/#website", "name": "EnerFab", "alternateName": ["EnerFab Sri Lanka", "enerfab.lk"], "url": SITE + "/", "publisher": {"@id": ORG_ID}, "inLanguage": "en-LK"})
 ) + header("home") + f"""
 <section class="tour" aria-label="Inside an EnerFab gasifier plant">
   <div class="tour__stage" data-plant3d data-tour>
@@ -887,39 +888,87 @@ division("esco-energy-solutions",
 """, ["biomass-gasifiers", "fuelwood-biomass-supply", "steel-fabrication"])
 
 # ================================================================ PROJECTS
-projects = [
-    ("kandalama-gasifier.jpg", "Hotels", "Kandalama Hotel and Tea Factory Hotel", "Aitken Spence Group", "EnerFab gasifiers have operated at both hotels for more than a decade, with EnerFab after-sales service. The Daily News covered the Tea Factory Hotel installation in November 2007.", "/solutions/biomass-gasifiers/"),
-    ("gasifier-collage.jpg", "Industry", "CW Mackie", "Gasifier", "One of several establishments that have operated EnerFab gasifiers for more than a decade.", "/solutions/biomass-gasifiers/"),
-    ("producer-gas-flame.jpg", "Thermal · since 2006", "Rubber processing plant dryer", "Diesel to producer gas", "The dryer burned 50 litres of diesel an hour. EnerFab replaced the diesel burner with a producer-gas burner and gasifier, and it has operated from 2006 to date.", "/solutions/biomass-gasifiers/"),
-    ("commissioning-250kw-gasifier.jpg", "Electrical · 2017", "Wood processing plant", "200 kW gasifier generator", "Makes 200 kW of electricity from the factory’s waste wood, proving producer gas is clean enough for an internal combustion engine. A further 400 kW of thermal energy is available from the engine’s exhaust and cooling.", "/solutions/biomass-gasifiers/"),
-    ("gasifier-installation.jpg", "Thermal · 2018", "Poultry farm, Puttalam", "LPG to biomass", "In July 2018 EnerFab undertook to install a gasification plant to replace LPG at a poultry farm in Puttalam.", "/solutions/biomass-gasifiers/"),
-    ("plantation-hills.jpg", "Plantation · 2008", "Nawagaththegama energy plantation", "40,000 plants", "A model fuelwood plantation planted on scrubland in the Maha season of 2008, now mature.", "/solutions/fuelwood-biomass-supply/"),
-    ("hydro-generators.jpg", "Hydro · 2009", "Aitken Spence Power mini-hydro", "GUGLER turbines", "EnerFab was assigned the installation of the machinery and local technical support.", "/solutions/mini-hydro-power-plants/"),
-    ("hydro-battalgalla.jpg", "Hydro · 2010", "Kirkoswald hydropower project", "3 Francis turbines, 4.5 MW", "Bogo Power awarded GUGLER Water Turbines, represented in Sri Lanka by EnerFab, a turnkey contract including all electromechanical equipment.", "/solutions/mini-hydro-power-plants/"),
-    ("energy-audit-pipework.jpg", "ESCO", "15+ detailed energy audits", "Garment and tea factories", "Detailed energy audits completed in knitted-garment factories, tea factories and other sectors.", "/solutions/esco-energy-solutions/"),
-]
 proj = head("/projects/", "Biomass Gasifier Projects Sri Lanka | Case Studies | EnerFab",
     "EnerFab projects since 2005: gasifiers at Kandalama and Tea Factory hotels, a 200 kW gasifier generator, a diesel dryer converted in 2006, GUGLER mini-hydro and energy audits.",
-    extra=crumbs_ld([("Home", "/"), ("Projects", "/projects/")])
+    extra=crumbs_ld([("Home", "/"), ("Projects", "/projects/")]) + ld({"@context": "https://schema.org", "@type": "CollectionPage", "url": SITE + "/projects/",
+        "name": "EnerFab projects", "publisher": {"@id": ORG_ID},
+        "hasPart": [{"@type": "Article", "headline": pr["name"], "url": f"{SITE}/projects/{pr['slug']}/"} for pr in PROJECTS]})
 ) + header("projects") + page_hero("kandalama-gasifier.jpg", [("Projects", None)], "Projects running since 2005",
     "Gasifiers, plantations, hydro and energy audits delivered by EnerFab across Sri Lanka.") + f"""
 <section class="sec">
   <div class="wrap" style="display:grid;gap:clamp(56px,8vw,100px)">
 {"".join(f'''    <article class="split{' split--wr' if i % 2 == 0 else ' split--wl'}">
-      {'<figure class="media media--wide" data-mask>' + pic(img, h) + '</figure>' if i % 2 == 0 else ''}
+      {'<a class="media media--wide" data-mask href="/projects/' + pr["slug"] + '/" tabindex="-1" aria-hidden="true">' + pic(pr["img"], pr["name"]) + '</a>' if i % 2 == 0 else ''}
       <div>
-        <span class="solution__no">{tag}</span>
-        <h2 data-split style="font-size:clamp(1.8rem,3.6vw,3rem)">{h}</h2>
-        <p class="lede" data-reveal style="color:var(--green)">{sub}</p>
-        <p data-reveal>{p}</p>
-        <p data-reveal><a class="link" href="{u}">Related solution {ARROW}</a></p>
+        <span class="solution__no">{pr["tag"]}</span>
+        <h2 data-split style="font-size:clamp(1.8rem,3.6vw,3rem)"><a href="/projects/{pr["slug"]}/" style="color:inherit;text-decoration:none">{pr["name"]}</a></h2>
+        <p class="lede" data-reveal style="color:var(--green)">{pr["sub"]}</p>
+        <p data-reveal>{pr["card"]}</p>
+        <p data-reveal><a class="link" href="/projects/{pr["slug"]}/">Read the project {ARROW}</a> &nbsp; <a class="link" href="/solutions/{pr["div"]}/">{DIVS[pr["div"]]["name"]} {ARROW}</a></p>
       </div>
-      {'' if i % 2 == 0 else '<figure class="media media--wide" data-mask>' + pic(img, h) + '</figure>'}
+      {'' if i % 2 == 0 else '<a class="media media--wide" data-mask href="/projects/' + pr["slug"] + '/" tabindex="-1" aria-hidden="true">' + pic(pr["img"], pr["name"]) + '</a>'}
     </article>
-''' for i, (img, tag, h, sub, p, u) in enumerate(projects))}  </div>
+''' for i, pr in enumerate(PROJECTS))}  </div>
 </section>
 {cta()}""" + footer()
 page("/projects/", "projects/index.html", proj, "0.8")
+
+def project_cards(prs):
+    return '<div class="grid-3">' + "".join(
+        f'<a class="panel" style="text-decoration:none;color:inherit" href="/projects/{o["slug"]}/" data-reveal><span class="solution__no">{o["tag"]}</span><h3>{o["name"]}</h3><p class="muted" style="margin-bottom:18px">{o["card"]}</p><span class="link">Read the project {ARROW}</span></a>' for o in prs) + "</div>"
+
+for n, pr in enumerate(PROJECTS):
+    url = f"{SITE}/projects/{pr['slug']}/"
+    pr_ld = ld({"@context": "https://schema.org", "@type": "Article", "@id": url + "#article", "headline": pr["name"] + ": " + pr["sub"],
+        "description": pr["desc"], "image": f"{SITE}/assets/img/{pr['img']}", "datePublished": "2026-11-14",
+        "author": {"@id": ORG_ID}, "publisher": {"@id": ORG_ID}, "mainEntityOfPage": url, "inLanguage": "en-LK",
+        "about": {"@id": f"{SITE}/solutions/{pr['div']}/#service"}})
+    facts = "".join(f"<dt>{k}</dt><dd>{v}</dd>" for k, v in pr["facts"])
+    vids = "".join(f'<div data-reveal style="margin:28px 0">{video(v, t)}</div>' for v, t in pr["video"])
+    gal = ""
+    if len(pr["gallery"]) > 1:
+        gal = '<div class="gallery" style="margin:28px 0;grid-template-columns:repeat(3,1fr)" data-reveal>' + "".join(f'<button type="button">{pic(i, a, sizes="(max-width: 760px) 33vw, 16vw")}</button>' for i, a in pr["gallery"]) + "</div>" + f'<dialog class="lightbox" data-gallery><button class="lightbox__close" type="button" aria-label="Close">×</button><img src="/assets/img/{pr["gallery"][0][0]}" alt=""><p></p></dialog>'
+    elif pr["gallery"]:
+        i, a = pr["gallery"][0]
+        gal = f'<figure class="media media--wide" style="margin:28px 0" data-mask>{pic(i, a)}</figure>'
+    src = "".join(f'<li><a href="{u}" rel="noopener" target="_blank">{html.escape(t)}</a></li>' for t, u in pr["sources"])
+    guides = [a for a in ARTICLES if a["slug"] in pr["guides"]]
+    others = [PROJECTS[(n + k) % len(PROJECTS)] for k in (1, 2, 3)]
+    h, how = pr["how"]
+    content = head(f"/projects/{pr['slug']}/", pr["seo"], pr["desc"], image=pr["img"],
+        extra=crumbs_ld([("Home", "/"), ("Projects", "/projects/"), (pr["name"], f"/projects/{pr['slug']}/")]) + pr_ld
+    ) + header("projects") + page_hero(pr["img"], [("Projects", "/projects/"), (pr["name"], None)], pr["name"], pr["sub"]) + f"""
+<section class="sec">
+  <div class="wrap article">
+    <aside class="article__side">
+      <div class="panel" data-reveal>
+        <h2 style="font-size:1.1rem;margin-bottom:16px">Project facts</h2>
+        <dl class="facts">{facts}</dl>
+      </div>
+      <a class="btn btn--primary" href="/contact/#inquiry" data-magnetic>Plan a similar project {ARROW}</a>
+    </aside>
+    <article class="prose">
+      <span class="solution__no">{pr["tag"]}</span>
+      <h2>The project</h2>
+      {pr["body"]}
+      {vids}{gal}
+      <h2>{h}</h2>
+      {how}
+      <h2>Source</h2>
+      <ul class="sources">{src}</ul>
+      <p>Related: <a href="/solutions/{pr["div"]}/">{DIVS[pr["div"]]["name"]}</a></p>
+    </article>
+  </div>
+</section>
+{'<section class="sec sec--line"><div class="wrap"><div class="head"><h2 data-split>Related guides</h2><a class="link" href="/insights/" data-reveal>All guides ' + ARROW + '</a></div>' + article_cards(guides) + '</div></section>' if guides else ''}
+<section class="sec sec--line">
+  <div class="wrap">
+    <div class="head"><h2 data-split>More projects</h2><a class="link" href="/projects/" data-reveal>All projects {ARROW}</a></div>
+    {project_cards(others)}
+  </div>
+</section>
+{cta()}""" + footer()
+    page(f"/projects/{pr['slug']}/", f"projects/{pr['slug']}/index.html", content, "0.7")
 
 # ================================================================ FAQ
 faq_groups = [
